@@ -15,6 +15,51 @@ from sklearn import preprocessing
 import plotly.express as px
 import plotly.graph_objects as go
 
+import mlflow
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+
+
+def experiment_linear_regression(df):
+    #mlflow.set_tracking_uri("sqlite:///mlflow.db")
+
+    mlflow.set_tracking_uri("http://localhost:5000")
+
+    mlflow.set_experiment("INCC Tracking")
+
+    # Preparando os dados para o modelo
+    X = df[['Data']]
+    y = df[['INCC Geral float']]
+
+    # Dividindo os dados em conjuntos de treino e teste
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    print("\nDimensões dos conjuntos de dados:")
+    print(f"X_train: {X_train.shape}")
+    print(f"X_test: {X_test.shape}") 
+    print(f"y_train: {y_train.shape}")
+    print(f"y_test: {y_test.shape}")
+
+    with mlflow.start_run() as run:
+        mlflow.log_param("model_type", "LinearRegression")
+
+        model = LinearRegression()
+        model.fit(X_train, y_train)
+
+        y_pred = model.predict(X_test)
+
+        mse = mean_squared_error(y_test, y_pred)
+        mlflow.log_metric("mse", mse)
+
+        print(f"Run ID: {run.info.run_id}")
+
+        mlflow.sklearn.log_model(model, "linear_regression_model")
+        print(f"Modelo Linear Regression registrado no MLflow! Run ID: {run.info.run_id}")
+
+
 def main():
     # Lendo o arquivo de dados
     df = pd.read_csv('./data/dataset INCC.csv', sep="\t")
@@ -35,6 +80,10 @@ def main():
     
     print("\nDataFrame após processamento:")
     print(df.head())
+
+    # Experimento 1: Regressão Linear
+    experiment_linear_regression(df)
+
 
 if __name__ == "__main__":
     main() 
